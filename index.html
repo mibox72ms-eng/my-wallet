@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-  <title>مدیریت مالی </title>
+  <title>مدیریت مالی</title>
   
   <link rel="icon" type="image/png" sizes="192x192" href="https://cdn-icons-png.flaticon.com/512/3258/3258446.png">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3258/3258446.png">
@@ -327,6 +327,13 @@
   <div id="page-settings" class="page">
     <div class="card">
       <div class="section-title"><i class="fas fa-cogs" style="color:var(--dark)"></i> مدیریت و تنظیمات</div>
+      
+      <!-- پروفایل کاربری (جدید) -->
+      <div class="setting-item" onclick="openProfileModal()">
+        <div style="font-weight:600;"><i class="fas fa-user-circle" style="margin-left:8px; color:var(--primary); font-size:1.1rem;"></i> پروفایل کاربری</div>
+        <i class="fas fa-chevron-left"></i>
+      </div>
+      
       <div class="setting-item" onclick="openSettingManager('account', 'مدیریت حساب‌های بانکی')">
         <div style="font-weight:600;"><i class="fas fa-credit-card" style="margin-left:8px; color:var(--primary)"></i> حساب‌های بانکی</div>
         <i class="fas fa-chevron-left"></i>
@@ -507,14 +514,12 @@
       if(incomeCats.length === 0) incomeCats = ['حقوق'];
       if(accounts.length === 0) accounts = ['نقدی'];
 
-      // شناسایی خودکار تمام حساب‌های استفاده شده
       let allAccNames = [...accounts];
       transactions.forEach(t => {
           if(t.account && !allAccNames.includes(t.account)) allAccNames.push(t.account);
           if(t.dest_account && !allAccNames.includes(t.dest_account)) allAccNames.push(t.dest_account);
       });
 
-      // محاسبه خالص موجودی بر اساس درآمدها و هزینه‌ها
       let totalBal = 0;
       transactions.forEach(t => {
           if(t.tx_type === 'درآمد') totalBal += Number(t.amount);
@@ -603,7 +608,6 @@
     setPrivacyVal('d_inc', DB.dashboard.monthIncome, privacyState.monthInc);
     setPrivacyVal('d_exp', DB.dashboard.monthExpense, privacyState.monthExp);
 
-    // تغییر رنگ موجودی در صورت منفی شدن
     let dBalEl = document.getElementById('d_bal');
     let cBalEl = document.getElementById('c_bal');
     if (DB.dashboard.totalBalance < 0 && !privacyState.totalBal) {
@@ -714,9 +718,10 @@
             <div style="font-weight:600; font-size:0.9rem; color:var(--dark);">${titleDesc}</div>
             <div style="font-size:0.75rem; color:var(--gray);">${t.tx_date} | ${subMeta}</div>
           </div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <div style="font-weight:700; font-size:1rem; direction:ltr;" class="${amtClass}">${sign}${fN(t.amount)}</div>
-            <i class="fas fa-trash del-icon" onclick="deleteTransaction('${t.id}')"></i>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <div style="font-weight:700; font-size:1rem; direction:ltr; margin-left:8px;" class="${amtClass}">${sign}${fN(t.amount)}</div>
+            <i class="fas fa-edit edit-icon" onclick="editTransactionModal('${t.id}')"></i>
+            <i class="fas fa-trash del-icon" onclick="if(confirm('این تراکنش پاک شود؟')) deleteTransaction('${t.id}')"></i>
           </div>
         </div>`;
     });
@@ -764,9 +769,10 @@
         let titleDesc = t.description ? t.description : (t.category && t.tx_type !== 'انتقال' ? t.category : t.tx_type);
         html += `<div class="tx-item">
           <div class="tx-info"><div class="tx-desc">${titleDesc}</div><div class="tx-meta"><span>${t.tx_date}</span></div></div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <div class="tx-amount ${amtClass}">${sign}${fN(t.amount)}</div>
-            <i class="fas fa-trash del-icon" onclick="deleteTransaction('${t.id}')"></i>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <div class="tx-amount ${amtClass}" style="margin-left:8px;">${sign}${fN(t.amount)}</div>
+            <i class="fas fa-edit edit-icon" onclick="editTransactionModal('${t.id}')"></i>
+            <i class="fas fa-trash del-icon" onclick="if(confirm('این تراکنش پاک شود؟')) deleteTransaction('${t.id}')"></i>
           </div>
         </div>`;
       });
@@ -774,6 +780,59 @@
     }
     document.getElementById('uniModalContent').innerHTML = html;
     openModal();
+  }
+
+  function editTransactionModal(id) {
+    let t = DB.transactions.find(x => x.id === id);
+    if(!t) return;
+    
+    let isTransfer = t.tx_type === 'انتقال';
+    let isIncome = t.tx_type === 'درآمد';
+
+    let catList = isIncome ? DB.incSources : DB.categories;
+    let catOpts = catList.map(c => `<option value="${c}" ${c === t.category ? 'selected' : ''}>${c}</option>`).join('');
+    let accOpts = DB.accounts.map(a => `<option value="${a}" ${a === t.account ? 'selected' : ''}>${a}</option>`).join('');
+    let destOpts = DB.accounts.map(a => `<option value="${a}" ${a === t.dest_account ? 'selected' : ''}>${a}</option>`).join('');
+    let methOpts = DB.methods.map(m => `<option value="${m}" ${m === t.method ? 'selected' : ''}>${m}</option>`).join('');
+    let monthOpts = DB.months.map(m => `<option value="${m}" ${m === t.tx_month ? 'selected' : ''}>${m}</option>`).join('');
+
+    document.getElementById('uniModalTitle').innerText = 'ویرایش تراکنش';
+    document.getElementById('uniModalContent').innerHTML = `
+      <div style="padding: 10px 0; display:flex; flex-direction:column; gap:12px; text-align:right;">
+        <div class="input-grp amount"><label>مبلغ تراکنش (${t.tx_type})</label><input type="tel" id="e_amt" value="${fN(t.amount)}" onkeyup="formatNum(this)"></div>
+        <div class="grid-2" style="margin-bottom:0;">
+          <div class="input-grp"><label>تاریخ</label><input type="text" id="e_date" value="${t.tx_date}"></div>
+          <div class="input-grp"><label>ماه</label><select id="e_month">${monthOpts}</select></div>
+        </div>
+        ${!isTransfer ? `<div class="input-grp"><label>دسته‌بندی</label><select id="e_cat">${catOpts}</select></div>` : ''}
+        <div class="input-grp"><label>${isTransfer ? 'از حساب مبدأ' : 'حساب مرتبط'}</label><select id="e_acc">${accOpts}</select></div>
+        ${isTransfer ? `<div class="input-grp"><label>به حساب مقصد</label><select id="e_dest">${destOpts}</select></div>` : ''}
+        <div class="input-grp"><label>روش پرداخت</label><select id="e_meth">${methOpts}</select></div>
+        <div class="input-grp"><label>شرح تراکنش</label><input type="text" id="e_desc" value="${t.description || ''}"></div>
+        
+        <button class="btn" style="background:var(--warning); color:#fff; margin-top:10px;" onclick="processEditTransaction('${id}', '${t.tx_type}')">ذخیره تغییرات</button>
+      </div>
+    `;
+    openModal();
+  }
+
+  function processEditTransaction(id, txType) {
+    let updateData = {
+      amount: Number(document.getElementById('e_amt').value.replace(/,/g, '')) || 0,
+      tx_date: document.getElementById('e_date').value,
+      tx_month: document.getElementById('e_month').value,
+      account: document.getElementById('e_acc').value,
+      method: document.getElementById('e_meth').value,
+      description: document.getElementById('e_desc').value
+    };
+
+    if (txType !== 'انتقال') updateData.category = document.getElementById('e_cat').value;
+    if (txType === 'انتقال') updateData.dest_account = document.getElementById('e_dest').value;
+
+    executeAction(async () => {
+      const {error} = await supabaseClient.from('transactions').update(updateData).eq('id', id);
+      if(error) throw error;
+    }, '✅ تراکنش با موفقیت ویرایش شد');
   }
 
   async function executeAction(actionFunc, successMsg) {
@@ -832,7 +891,44 @@
     }, '✅ تراکنش حذف شد');
   }
 
-  // --- سیستم ساده و ایمن منوهای پاپ‌آپ ---
+  // --- تنظیمات و پروفایل ---
+  
+  function openProfileModal() {
+    let email = currentUser ? currentUser.email : 'نامشخص';
+    
+    document.getElementById('uniModalTitle').innerText = 'پروفایل کاربری';
+    document.getElementById('uniModalContent').innerHTML = `
+      <div style="padding: 10px 0; display:flex; flex-direction:column; gap:15px; text-align:right;">
+        <div style="background:var(--light); padding:15px; border-radius:12px; text-align:center;">
+          <i class="fas fa-user-circle" style="font-size:3rem; color:var(--gray); margin-bottom:10px;"></i>
+          <div style="font-weight:bold; font-size:1rem; color:var(--dark); direction:ltr;">${email}</div>
+          <div style="font-size:0.8rem; color:var(--success); margin-top:5px;">حساب متصل است</div>
+        </div>
+        
+        <div class="section-title" style="margin-bottom:5px; font-size:0.95rem;">تغییر رمز عبور</div>
+        <div class="input-grp">
+          <label>رمز عبور جدید</label>
+          <input type="password" id="m_new_pass" placeholder="حداقل ۶ کاراکتر" dir="ltr">
+        </div>
+        <button class="btn" style="background:var(--primary);" onclick="updateUserPassword()">ذخیره رمز جدید</button>
+      </div>
+    `;
+    openModal();
+  }
+
+  function updateUserPassword() {
+    let newPass = document.getElementById('m_new_pass').value;
+    if(!newPass || newPass.length < 6) {
+       showToast('❌ رمز عبور باید حداقل ۶ حرف باشد', true);
+       return;
+    }
+    
+    executeAction(async () => {
+       const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+       if (error) throw error;
+    }, '✅ رمز عبور با موفقیت تغییر کرد');
+  }
+
   function openSettingManager(type, title) {
     let items = [];
     if(type === 'category') items = DB.categories || [];
@@ -841,7 +937,6 @@
 
     let listHtml = '';
     
-    // نمایش ساده‌ی لیست و دکمه حذف
     if(items.length > 0) {
       listHtml = items.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:8px; padding:10px 12px; background:#f8f9fa; border-radius:8px; border: 1px solid #eee; align-items:center;">
         <span style="font-weight:600; font-size:0.9rem;">${i}</span>
@@ -851,7 +946,6 @@
       listHtml = `<div style="text-align:center; padding:10px; color:var(--gray); font-size:0.85rem;">لیست خالی است</div>`;
     }
 
-    // اضافه کردن دکمه جادویی در انتهای لیست دسته‌بندی‌ها (همیشه در دسترس)
     if(type === 'category') {
        listHtml += `<div style="text-align:center; margin-top:15px; padding-bottom:10px;"><button class="btn" style="background:var(--primary); width:auto; padding:8px 16px; font-size:0.8rem;" onclick="injectDefaultCategories()">+ بارگذاری دسته‌های پیش‌فرض</button></div>`;
     }
@@ -1098,7 +1192,6 @@
     }, '✅ واریز انجام شد');
   }
 
-  // توابع پایه باز و بسته کردن مودال
   function openModal() { document.getElementById('uniOverlay').classList.add('show'); document.getElementById('uniSheet').classList.add('show'); }
   function closeModal() { document.getElementById('uniOverlay').classList.remove('show'); document.getElementById('uniSheet').classList.remove('show'); }
 
@@ -1111,7 +1204,6 @@
     privacyState[key] = !privacyState[key];
     let isH = privacyState[key];
     
-    // بازگردانی رنگ در صورت منفی بودن
     let dBalEl = document.getElementById('d_bal');
     let cBalEl = document.getElementById('c_bal');
     
