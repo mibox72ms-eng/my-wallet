@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-  <title>مدیریت مالی</title>
+  <title>مدیریت مالی </title>
   
   <link rel="icon" type="image/png" sizes="192x192" href="https://cdn-icons-png.flaticon.com/512/3258/3258446.png">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3258/3258446.png">
@@ -507,7 +507,7 @@
       if(incomeCats.length === 0) incomeCats = ['حقوق'];
       if(accounts.length === 0) accounts = ['نقدی'];
 
-      // شناسایی خودکار تمام حساب‌های استفاده شده (حتی قدیمی‌ها مثل "حساب اصلی")
+      // شناسایی خودکار تمام حساب‌های استفاده شده
       let allAccNames = [...accounts];
       transactions.forEach(t => {
           if(t.account && !allAccNames.includes(t.account)) allAccNames.push(t.account);
@@ -607,7 +607,7 @@
     let dBalEl = document.getElementById('d_bal');
     let cBalEl = document.getElementById('c_bal');
     if (DB.dashboard.totalBalance < 0 && !privacyState.totalBal) {
-        dBalEl.style.color = '#ff6b81'; // قرمز روشن و خوانا برای بک‌گراند تیره
+        dBalEl.style.color = '#ff6b81';
         cBalEl.style.color = '#ff6b81';
     } else {
         dBalEl.style.color = ''; 
@@ -832,6 +832,7 @@
     }, '✅ تراکنش حذف شد');
   }
 
+  // --- سیستم ساده و ایمن منوهای پاپ‌آپ ---
   function openSettingManager(type, title) {
     let items = [];
     if(type === 'category') items = DB.categories || [];
@@ -840,17 +841,19 @@
 
     let listHtml = '';
     
-    if(items && items.length > 0 && items[0] !== 'عمومی' && items[0] !== 'نقدی' && items[0] !== 'حقوق') {
+    // نمایش ساده‌ی لیست و دکمه حذف
+    if(items.length > 0) {
       listHtml = items.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:8px; padding:10px 12px; background:#f8f9fa; border-radius:8px; border: 1px solid #eee; align-items:center;">
         <span style="font-weight:600; font-size:0.9rem;">${i}</span>
         <i class="fas fa-trash del-icon" style="padding:0;" onclick="deleteSetting('${type}', '${i}')"></i>
       </div>`).join('');
     } else {
-       if(type === 'category') {
-          listHtml = `<div style="text-align:center; padding:15px; color:var(--gray); font-size:0.9rem;">لیست شما خالی است.<br><button class="btn" style="background:var(--primary); margin-top:10px; width:auto; padding:8px 16px;" onclick="injectDefaultCategories()">+ بارگذاری دسته‌های پیش‌فرض</button></div>`;
-       } else {
-          listHtml = `<div style="text-align:center; padding:10px; color:var(--gray); font-size:0.85rem;">لیست خالی است</div>`;
-       }
+      listHtml = `<div style="text-align:center; padding:10px; color:var(--gray); font-size:0.85rem;">لیست خالی است</div>`;
+    }
+
+    // اضافه کردن دکمه جادویی در انتهای لیست دسته‌بندی‌ها (همیشه در دسترس)
+    if(type === 'category') {
+       listHtml += `<div style="text-align:center; margin-top:15px; padding-bottom:10px;"><button class="btn" style="background:var(--primary); width:auto; padding:8px 16px; font-size:0.8rem;" onclick="injectDefaultCategories()">+ بارگذاری دسته‌های پیش‌فرض</button></div>`;
     }
 
     document.getElementById('uniModalTitle').innerText = title;
@@ -925,6 +928,8 @@
         </div>
         <i class="fas fa-trash del-icon" style="padding:0;" onclick="deleteGoal('${g.id}')"></i>
       </div>`).join('');
+    } else {
+      listHtml = `<div style="text-align:center; padding:10px; color:var(--gray); font-size:0.85rem;">هدفی ثبت نشده است</div>`;
     }
 
     document.getElementById('uniModalTitle').innerText = 'مدیریت اهداف مالی';
@@ -1092,6 +1097,10 @@
        if(e2) throw e2;
     }, '✅ واریز انجام شد');
   }
+
+  // توابع پایه باز و بسته کردن مودال
+  function openModal() { document.getElementById('uniOverlay').classList.add('show'); document.getElementById('uniSheet').classList.add('show'); }
+  function closeModal() { document.getElementById('uniOverlay').classList.remove('show'); document.getElementById('uniSheet').classList.remove('show'); }
 
   function setPrivacyVal(id, val, isHidden) {
     let el = document.getElementById(id); el.setAttribute('data-val', fN(val));
