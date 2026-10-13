@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>مدیریت مالی</title>
+  
+  <link rel="icon" type="image/png" sizes="192x192" href="https://cdn-icons-png.flaticon.com/512/3258/3258446.png">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3258/3258446.png">
+  <meta name="theme-color" content="#4361ee">
+
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Supabase & Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --primary: #4361ee; --primary-light: #eff2fe; --success: #2ecc71; --success-light: #eafaf1;
+      --danger: #e74c3c; --danger-light: #fdedec; --warning: #f39c12; --warning-light: #fef5e7;
+      --dark: #2b2d42; --gray: #8d99ae; --light: #f8f9fa; --white: #ffffff;
+      --shadow-sm: 0 2px 4px rgba(0,0,0,0.05); --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Vazirmatn', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: #f0f2f5; color: var(--dark); padding-bottom: 80px; }
+    
+    header { background: var(--white); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 100; }
+    .header-title { font-size: 1.2rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px;}
+    .header-title img { width: 24px; height: 24px; }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+    .header-month { background: var(--light); border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; font-size: 0.85rem; font-weight: 600; outline: none; border-color: transparent; cursor:pointer;}
+    .header-icon { font-size: 1.2rem; color: var(--gray); cursor: pointer; transition: 0.2s; }
+    .header-icon:active { color: var(--primary); }
+
+    .page { padding: 16px; max-width: 600px; margin: 0 auto; display: none; animation: fadeIn 0.3s ease; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Auth Screen */
+    #auth-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #f0f2f5; z-index: 4000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+    .auth-card { background: white; padding: 30px 20px; border-radius: var(--radius); box-shadow: var(--shadow-md); width: 100%; max-width: 400px; text-align: center; }
+    .auth-logo { width: 60px; height: 60px; margin-bottom: 10px; }
+    .auth-card h2 { color: var(--dark); font-size: 1.5rem; margin-bottom: 20px; }
+    
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); display: flex; justify-content: space-around; align-items: center; padding: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 100; border-top-left-radius: 20px; border-top-right-radius: 20px; max-width: 600px; margin: 0 auto; height: 65px;}
+    .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--gray); font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.2s; flex: 1; height: 100%;}
+    .nav-item i { font-size: 1.3rem; margin-bottom: 4px; transition: 0.2s; }
+    .nav-item.active { color: var(--primary); }
+    .nav-item.active i { transform: translateY(-2px); }
+    
+    .nav-fab-container { flex: 1; display: flex; justify-content: center; align-items: center; height: 100%; position: relative; }
+    .nav-fab { position: absolute; bottom: 15px; background: var(--primary); color: white; width: 56px; height: 56px; min-width: 56px; min-height: 56px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(67, 97, 238, 0.4); border: 4px solid #f0f2f5; cursor: pointer; transition: 0.3s; z-index: 101;}
+    .nav-fab i { font-size: 1.5rem; margin: 0; }
+    .nav-fab.active { background: var(--dark); box-shadow: 0 4px 15px rgba(43, 45, 66, 0.4); border-color: var(--white);}
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .card { background: var(--white); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); margin-bottom: 16px;}
+    .stat-card { display: flex; flex-direction: column; justify-content: center; }
+    .card.main-card { background: linear-gradient(135deg, var(--primary), #3a0ca3); color: white; }
+    
+    .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .stat-title { font-size: 0.8rem; font-weight: 600; color: var(--gray); display: flex; align-items: center; gap: 6px; }
+    .card.main-card .stat-title { color: rgba(255,255,255,0.8); }
+    .privacy-toggle { font-size: 0.75rem; cursor: pointer; opacity: 0.7; transition: 0.2s; padding: 4px 8px; border-radius: 12px; background: rgba(0,0,0,0.05); }
+    .card.main-card .privacy-toggle { background: rgba(255,255,255,0.2); }
+    .privacy-toggle:active { opacity: 1; transform: scale(0.95); }
+    
+    .stat-val { font-size: 1.4rem; font-weight: 700; transition: 0.3s ease; }
+    .card.main-card .stat-val { font-size: 2rem; }
+    .stat-val.hidden-val { filter: blur(5px); opacity: 0.5; user-select: none; }
+    .stat-currency { font-size:0.8rem; margin-top:4px; transition: 0.3s ease;}
+    .stat-currency.hidden-val { opacity: 0; }
+    
+    .section-title { font-size: 1rem; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;}
+    .section-title-left { display: flex; align-items: center; gap: 8px;}
+
+    .type-toggle { display: flex; background: var(--light); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+    .type-btn { flex: 1; text-align: center; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 0.9rem; color: var(--gray); cursor: pointer; transition: 0.3s; }
+    .type-btn.active[data-type="هزینه"] { background: var(--white); color: var(--danger); box-shadow: var(--shadow-sm); }
+    .type-btn.active[data-type="درآمد"] { background: var(--white); color: var(--success); box-shadow: var(--shadow-sm); }
+    .type-btn.active[data-type="انتقال"] { background: var(--white); color: var(--primary); box-shadow: var(--shadow-sm); }
+    
+    .input-grp { margin-bottom: 16px; position: relative; text-align: right; }
+    .input-grp label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--gray); margin-bottom: 6px; }
+    .input-grp input, .input-grp select { width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 1rem; font-family: inherit; background: var(--white); outline: none; }
+    .input-grp input:focus, .input-grp select:focus { border-color: var(--primary); }
+    .input-grp.amount input { font-size: 1.5rem; font-weight: 700; text-align: left; direction: ltr; padding-right: 50px; }
+    .curr-lbl { position: absolute; right: 16px; bottom: 12px; font-size: 0.9rem; color: var(--gray); font-weight: 600; }
+    
+    .checkbox-grp { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; direction: rtl;}
+    .checkbox-grp input { width: 20px; height: 20px; accent-color: var(--primary); }
+    .checkbox-grp label { margin: 0; font-size: 0.9rem; color: var(--dark); font-weight: 600; }
+
+    .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3); transition: 0.2s;}
+    .btn:active { transform: scale(0.98); }
+    .btn-secondary { background: var(--light); color: var(--dark); box-shadow: none; border: 1px solid #ddd; }
+    
+    .list-item { background: var(--white); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); display:flex; flex-direction: column; gap:10px; cursor: pointer; transition: 0.2s; border: 1px solid transparent;}
+    .list-item:active { transform: scale(0.98); background: var(--light); }
+    .list-item.action-item { position: relative; padding-bottom: 40px; }
+    .prog-bg { height: 8px; background: var(--light); border-radius: 4px; width: 100%; overflow:hidden;}
+    .prog-bar { height: 100%; transition: 0.5s; }
+    .prog-bar.g { background: var(--success); }
+    .prog-bar.w { background: var(--warning); }
+    .prog-bar.d { background: var(--danger); }
+    .prog-bar.p { background: var(--primary); }
+    
+    .action-btn { position: absolute; bottom: 10px; left: 16px; background: var(--primary-light); color: var(--primary); padding: 4px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; border: none; cursor: pointer; transition: 0.2s;}
+    .action-btn:active { background: var(--primary); color: white; }
+    .action-btn.btn-danger { background: var(--danger-light); color: var(--danger); }
+    .action-btn.btn-danger:active { background: var(--danger); color: white; }
+
+    .search-bar { display: flex; background: var(--light); border-radius: 12px; padding: 10px 16px; margin-bottom: 16px; align-items: center; gap: 10px; border: 1px solid #e2e8f0; }
+    .search-bar input { border: none; outline: none; flex: 1; font-family: inherit; font-size: 0.95rem; background: transparent;}
+    .search-bar i { color: var(--gray); }
+    .pos { color: var(--success); }
+    .neg { color: var(--danger); }
+    .neu { color: var(--primary); }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 5000; display: none; opacity: 0; transition: 0.3s; }
+    .modal-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 20px; z-index: 5001; transform: translateY(100%); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1); max-height: 85vh; display: flex; flex-direction: column; max-width: 600px; margin: 0 auto;}
+    .modal-overlay.show { display: block; opacity: 1; }
+    .modal-sheet.show { transform: translateY(0); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+    .modal-title { font-weight: 700; font-size: 1.1rem; color: var(--dark); }
+    .close-btn { background: var(--light); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: var(--gray); }
+    .modal-content-area { overflow-y: auto; flex: 1; padding-bottom: 20px; }
+
+    .tx-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed #eee; }
+    .tx-info { display: flex; flex-direction: column; gap: 4px; }
+    .tx-desc { font-weight: 600; font-size: 0.9rem; color: var(--dark); }
+    .tx-meta { font-size: 0.75rem; color: var(--gray); display: flex; gap: 8px; }
+    .tx-amount { font-weight: 700; font-size: 1rem; direction: ltr; }
+
+    .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid #eee; cursor: pointer;}
+    .setting-item i { color: var(--gray); }
+    
+    .del-icon { color: var(--danger); padding: 8px; cursor: pointer; opacity: 0.7; transition: 0.2s;}
+    .del-icon:active { opacity: 1; transform: scale(0.9); }
+    .edit-icon { color: var(--primary); padding: 8px; cursor: pointer; opacity: 0.7; transition: 0.2s;}
+    .edit-icon:active { opacity: 1; transform: scale(0.9); }
+
+    #loader { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); z-index: 6000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .spinner { border: 4px solid var(--primary-light); border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 16px; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    
+    #errorBox { display: none; background: #fee2e2; color: #dc2626; padding: 20px; border-radius: 12px; margin: 20px; text-align: right; direction: rtl; font-size: 0.9rem; z-index: 7000; position: relative;}
+    
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 12px 24px; border-radius: 30px; font-size: 0.9rem; font-weight: 600; z-index: 8000; display: none; box-shadow: var(--shadow-md); transition: 0.3s; }
+  </style>
+</head>
+<body>
+
+  <!-- صفحه ورود و ثبت نام -->
+  <div id="auth-screen">
+    <div class="auth-card">
+      <img src="https://cdn-icons-png.flaticon.com/512/3258/3258446.png" class="auth-logo" alt="logo">
+      <h2>ورود به مدیریت مالی</h2>
+      <div class="input-grp">
+        <label>ایمیل</label>
+        <input type="email" id="auth-email" placeholder="example@email.com" dir="ltr">
+      </div>
+      <div class="input-grp">
+        <label>رمز عبور</label>
+        <input type="password" id="auth-pass" placeholder="حداقل ۶ کاراکتر" dir="ltr">
+      </div>
+      <button class="btn" onclick="handleLogin()">ورود</button>
+      <button class="btn btn-secondary" onclick="handleRegister()">ثبت نام جدید</button>
+      <div id="auth-msg" style="margin-top: 15px; color: var(--danger); font-size: 0.85rem; font-weight: bold;"></div>
+    </div>
+  </div>
+
+  <div id="loader"><div class="spinner"></div><div style="color:var(--primary); font-weight:bold;">در حال همگام‌سازی...</div></div>
+  <div id="toast" class="toast">پیام</div>
+  
+  <div id="errorBox">
+    <strong>⚠️ خطای سیستم:</strong>
+    <p id="errorMsgText"></p>
+    <button onclick="window.location.reload()" style="margin-top:10px; padding:8px 16px; background:#dc2626; color:white; border:none; border-radius:8px; cursor:pointer;">تلاش مجدد</button>
+  </div>
+
+  <header>
+    <div class="header-title">
+      <img src="https://cdn-icons-png.flaticon.com/512/3258/3258446.png" alt="logo">
+      مدیریت مالی
+    </div>
+    <div class="header-actions">
+      <select id="headMonth" class="header-month" onchange="loadData()"></select>
+      <i class="fas fa-sync-alt header-icon" onclick="loadData()"></i>
+      <i class="fas fa-cog header-icon" onclick="nav('settings', document.getElementById('nav-set'))"></i>
+    </div>
+  </header>
+
+  <!-- 1. DASHBOARD -->
+  <div id="page-dash" class="page active">
+    <div class="card main-card">
+      <div class="stat-header">
+        <div class="stat-title"><i class="fas fa-wallet"></i> موجودی کل حساب‌ها</div>
+        <div class="privacy-toggle" onclick="togglePrivacy('totalBal', this)"><i class="fas fa-eye-slash"></i> نمایش</div>
+      </div>
+      <div class="stat-val hidden-val" id="d_bal" data-val="0">****</div>
+      <div class="stat-currency hidden-val" id="c_bal">تومان</div>
+    </div>
+    
+    <div class="grid-2">
+      <div class="card stat-card" style="border:1px solid #d4efdf; cursor: pointer;" onclick="showTransactions('درآمد')">
+        <div class="stat-header">
+          <div class="stat-title" style="color:var(--success)"><i class="fas fa-arrow-down"></i> درآمد ماه</div>
+          <div class="privacy-toggle" onclick="event.stopPropagation(); togglePrivacy('monthInc', this)"><i class="fas fa-eye-slash"></i></div>
+        </div>
+        <div class="stat-val hidden-val" style="color:var(--success)" id="d_inc" data-val="0">****</div>
+      </div>
+      <div class="card stat-card" style="border:1px solid #f5b7b1; cursor: pointer;" onclick="showTransactions('هزینه')">
+        <div class="stat-header">
+          <div class="stat-title" style="color:var(--danger)"><i class="fas fa-arrow-up"></i> هزینه ماه</div>
+          <div class="privacy-toggle" onclick="event.stopPropagation(); togglePrivacy('monthExp', this)"><i class="fas fa-eye-slash"></i></div>
+        </div>
+        <div class="stat-val hidden-val" style="color:var(--danger)" id="d_exp" data-val="0">****</div>
+      </div>
+    </div>
+
+    <!-- اهداف مالی -->
+    <div class="card" id="goalsCard" style="display:none;">
+      <div class="section-title"><i class="fas fa-flag-checkered" style="color:var(--warning)"></i> اهداف مالی</div>
+      <div id="goalsList"></div>
+    </div>
+    
+    <div class="card">
+      <div class="section-title">
+         <div class="section-title-left"><i class="fas fa-chart-pie" style="color:var(--primary)"></i> ترکیب هزینه‌ها</div>
+         <div style="font-size: 0.8rem; color: var(--primary); cursor: pointer;" onclick="showTransactions('همه')">مشاهده همه</div>
+      </div>
+      <canvas id="expChart" height="230"></canvas>
+    </div>
+  </div>
+
+  <!-- 2. ADD TRANSACTION -->
+  <div id="page-add" class="page">
+    <div class="card">
+      <form id="txForm" onsubmit="submitForm(event)">
+        <div class="type-toggle">
+          <div class="type-btn active" data-type="هزینه" onclick="setType('هزینه')">هزینه</div>
+          <div class="type-btn" data-type="درآمد" onclick="setType('درآمد')">درآمد</div>
+          <div class="type-btn" data-type="انتقال" onclick="setType('انتقال')">انتقال</div>
+        </div>
+        <input type="hidden" id="f_type" value="هزینه">
+
+        <div class="input-grp amount">
+          <label>مبلغ تراکنش</label>
+          <input type="tel" id="f_amt" placeholder="0" onkeyup="formatNum(this)" required>
+          <span class="curr-lbl">تومان</span>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:0;">
+          <div class="input-grp"><label>تاریخ</label><input type="text" id="f_date" required></div>
+          <div class="input-grp"><label>ماه</label><select id="f_month" required></select></div>
+        </div>
+
+        <div class="input-grp" id="grp_cat"><label>دسته‌بندی</label><select id="f_cat"></select></div>
+        <div class="input-grp"><label id="lbl_acc">حساب پرداختی</label><select id="f_acc" required></select></div>
+        <div class="input-grp" id="grp_dest" style="display:none;"><label>به حساب (مقصد)</label><select id="f_dest"></select></div>
+        <div class="input-grp"><label>روش پرداخت</label><select id="f_method"></select></div>
+        <div class="input-grp"><label>شرح</label><input type="text" id="f_desc" placeholder="بابت..."></div>
+        
+        <div class="checkbox-grp" id="grp_recur">
+          <input type="checkbox" id="f_recur">
+          <label for="f_recur">تکرار شونده (ثابت ماهانه)</label>
+        </div>
+
+        <button type="submit" id="f_btn" class="btn">ثبت تراکنش</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. BUDGET & DEBTS (همراه با دکمه افزودن وام جدید) -->
+  <div id="page-budget" class="page">
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="section-title" style="align-items: center;">
+         <div class="section-title-left"><i class="fas fa-hand-holding-usd" style="color:var(--danger)"></i> اقساط و بدهی‌ها</div>
+         <!-- دکمه جادویی ثبت وام جدید -->
+         <button style="background:var(--primary-light); color:var(--primary); padding:6px 12px; border-radius:8px; font-size:0.75rem; font-weight:bold; border:none; cursor:pointer;" onclick="openDebtModal()"><i class="fas fa-plus"></i> وام جدید</button>
+      </div>
+      <div id="debtsList"></div>
+    </div>
+    <div class="card">
+      <div class="section-title"><i class="fas fa-bullseye" style="color:var(--warning)"></i> وضعیت بودجه ماهانه</div>
+      <div id="budgetList"></div>
+    </div>
+  </div>
+
+  <!-- 4. REPORTS -->
+  <div id="page-reports" class="page">
+    <div class="card">
+      <div class="section-title"><i class="fas fa-chart-line" style="color:var(--success)"></i> روند ۶ ماه اخیر</div>
+      <canvas id="trendChart" height="230"></canvas>
+    </div>
+    <div class="grid-2">
+      <div class="card stat-card" style="cursor: pointer;" onclick="showTransactions('همه')">
+        <div class="stat-title">تعداد تراکنش‌ها</div>
+        <div class="stat-val" id="r_count">0</div>
+      </div>
+      <div class="card stat-card" style="cursor: pointer;" onclick="showMaxExpenseTransactions()">
+        <div class="stat-title" style="color:var(--danger)">بیشترین هزینه</div>
+        <div class="stat-val" style="font-size:1rem;" id="r_max">-</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title"><i class="fas fa-piggy-bank" style="color:var(--dark)"></i> موجودی تفکیکی حساب‌ها</div>
+      <div id="accList"></div>
+    </div>
+  </div>
+
+  <!-- 5. HISTORY -->
+  <div id="page-history" class="page">
+    <div class="search-bar">
+      <i class="fas fa-search"></i>
+      <input type="text" id="searchInput" placeholder="جستجو در تمام ماه‌ها..." onkeyup="filterHistory()">
+    </div>
+    <div class="card" style="padding:0;">
+      <div class="tx-list" id="fullHistoryList" style="padding: 16px; max-height: 70vh; overflow-y: auto;"></div>
+    </div>
+  </div>
+
+  <!-- 6. SETTINGS -->
+  <div id="page-settings" class="page">
+    <div class="card">
+      <div class="section-title"><i class="fas fa-cogs" style="color:var(--dark)"></i> مدیریت و تنظیمات</div>
+      <div class="setting-item" onclick="openSettingManager('account', 'مدیریت حساب‌های بانکی')">
+        <div style="font-weight:600;"><i class="fas fa-credit-card" style="margin-left:8px; color:var(--primary)"></i> حساب‌های بانکی</div>
+        <i class="fas fa-chevron-left"></i>
+      </div>
+      <div class="setting-item" onclick="openSettingManager('category', 'مدیریت دسته‌بندی‌ها')">
+        <div style="font-weight:600;"><i class="fas fa-tags" style="margin-left:8px; color:var(--warning)"></i> دسته‌بندی هزینه‌ها</div>
+        <i class="fas fa-chevron-left"></i>
+      </div>
+      <div class="setting-item" onclick="openSettingManager('income', 'مدیریت منابع درآمد')">
+        <div style="font-weight:600;"><i class="fas fa-briefcase" style="margin-left:8px; color:var(--success)"></i> منابع درآمد</div>
+        <i class="fas fa-chevron-left"></i>
+      </div>
+      <div class="setting-item" onclick="openGoalsManager()">
+        <div style="font-weight:600;"><i class="fas fa-flag-checkered" style="margin-left:8px; color:var(--warning)"></i> مدیریت اهداف مالی</div>
+        <i class="fas fa-chevron-left"></i>
+      </div>
+      <div class="setting-item" onclick="handleLogout()" style="margin-top:20px; color:var(--danger); border:none;">
+        <div style="font-weight:600;"><i class="fas fa-sign-out-alt" style="margin-left:8px; color:var(--danger)"></i> خروج از حساب کاربری</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="uniOverlay" onclick="closeModal()"></div>
+  <div class="modal-sheet" id="uniSheet">
+    <div class="modal-header">
+      <div class="modal-title" id="uniModalTitle">عنوان</div>
+      <button class="close-btn" onclick="closeModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-content-area" id="uniModalContent"></div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="nav('dash', this)"><i class="fas fa-home"></i><span>داشبورد</span></div>
+    <div class="nav-item" onclick="nav('budget', this)"><i class="fas fa-bullseye"></i><span>اقساط/بودجه</span></div>
+    <div class="nav-fab-container">
+       <div class="nav-fab" id="fabBtn" onclick="nav('add', this)"><i class="fas fa-plus"></i></div>
+    </div>
+    <div class="nav-item" onclick="nav('history', this)"><i class="fas fa-history"></i><span>تاریخچه</span></div>
+    <div class="nav-item" onclick="nav('reports', this)"><i class="fas fa-chart-bar"></i><span>گزارش</span></div>
+    <div style="display:none;" id="nav-set"></div>
+  </div>
+
+<script>
+  let supabaseClient = null;
+  let currentUser = null;
+  let DB = {}, chExp = null, chTrn = null;
+  let privacyState = { totalBal: true, monthInc: true, monthExp: true };
+
+  const BASE_MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+  const BASE_METHODS = ['کارت‌خوان', 'کارت به کارت', 'پایا', 'ساتنا', 'چک', 'نقد'];
+
+  window.onload = async () => {
+    try {
+      let d = new Date();
+      document.getElementById('f_date').value = new Intl.DateTimeFormat('fa-IR').format(d);
+    } catch(e) { document.getElementById('f_date').value = "1403/01/01"; }
+
+    if (typeof window.supabase === 'undefined') {
+       document.getElementById('loader').style.display = 'none';
+       document.getElementById('errorBox').style.display = 'block';
+       document.getElementById('errorMsgText').innerText = "⚠️ فایل‌های ابری بارگذاری نشدند. اینترنت خود را چک کنید.";
+       return;
+    }
+
+    try {
+      const supabaseUrl = 'https://osqoiwyysgfrxmnpctvy.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zcW9pd3l5c2dmcnhtbnBjdHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4Njk5NDksImV4cCI6MjEwNzQ0NTk0OX0._KYp9fW6nni4_cpa8sWR4vKiKnTyuymdSYhv1vRarP8';
+      supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      if (error) throw error;
+
+      if (session) {
+        currentUser = session.user;
+        document.getElementById('auth-screen').style.display = 'none';
+        loadData(true);
+      } else {
+        currentUser = null;
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('loader').style.display = 'none';
+      }
+
+      supabaseClient.auth.onAuthStateChange((event, s) => {
+        if (event === 'SIGNED_IN') {
+          currentUser = s.user;
+          document.getElementById('auth-screen').style.display = 'none';
+          document.getElementById('errorBox').style.display = 'none';
+          loadData(true);
+        } else if (event === 'SIGNED_OUT') {
+          currentUser = null;
+          document.getElementById('auth-screen').style.display = 'flex';
+          document.getElementById('loader').style.display = 'none';
+        }
+      });
+
+    } catch (err) {
+       document.getElementById('loader').style.display = 'none';
+       document.getElementById('errorBox').style.display = 'block';
+       document.getElementById('errorMsgText').innerText = "خطا در برقراری ارتباط با سرور: " + (err.message || err);
+    }
+  };
+
+  async function handleLogin() {
+    let email = document.getElementById('auth-email').value;
+    let password = document.getElementById('auth-pass').value;
+    if(!email || !password) return;
+    
+    document.getElementById('auth-msg').style.color = "var(--danger)";
+    document.getElementById('auth-msg').innerText = "در حال ورود...";
+    
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if(error) document.getElementById('auth-msg').innerText = "❌ ایمیل یا رمز عبور اشتباه است.";
+  }
+
+  async function handleRegister() {
+    let email = document.getElementById('auth-email').value;
+    let password = document.getElementById('auth-pass').value;
+    if(!email || !password) return;
+    
+    document.getElementById('auth-msg').style.color = "var(--danger)";
+    document.getElementById('auth-msg').innerText = "در حال ثبت‌نام...";
+    
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    if(error) {
+       document.getElementById('auth-msg').innerText = "❌ خطا در ثبت نام (احتمالاً رمز کمتر از ۶ حرف است).";
+    } else {
+       if(data.user) {
+         try {
+           await supabaseClient.from('accounts').insert([{ user_id: data.user.id, name: 'نقدی' }]);
+           const defaultExpenses = ['مسکن و اجاره', 'خرید خانه', 'خوراک و رستوران', 'خودرو، بنزین و حمل‌ونقل', 'کودک', 'درمان و دارو', 'قبض و خدمات', 'اینترنت و موبایل', 'پوشاک', 'تفریح و سرگرمی', 'تنقلات', 'خرید شخصی', 'هدیه', 'اقساط و بدهی', 'سفر', 'کار و پروژه', 'سایر'];
+           const catInserts = defaultExpenses.map(c => ({ user_id: data.user.id, type: 'هزینه', name: c }));
+           catInserts.push({ user_id: data.user.id, type: 'درآمد', name: 'حقوق' });
+           await supabaseClient.from('categories').insert(catInserts);
+
+           const budgetInserts = defaultExpenses.map(c => ({ user_id: data.user.id, category: c, amount: 0 }));
+           await supabaseClient.from('budgets').insert(budgetInserts);
+         } catch(e) {}
+         document.getElementById('auth-msg').style.color = "var(--success)";
+         document.getElementById('auth-msg').innerText = "✅ ثبت نام موفق! وارد شدید.";
+       }
+    }
+  }
+
+  async function handleLogout() {
+    await supabaseClient.auth.signOut();
+    nav('dash', document.querySelector('.bottom-nav .nav-item:first-child'));
+  }
+
+  async function loadData(isInit = false) {
+    if(!currentUser) { document.getElementById('loader').style.display = 'none'; return; }
+    
+    document.getElementById('loader').style.display = 'flex';
+    document.getElementById('errorBox').style.display = 'none';
+    
+    try {
+      const [txRes, accRes, catRes, budRes, debtRes, goalRes] = await Promise.all([
+        supabaseClient.from('transactions').select('*'),
+        supabaseClient.from('accounts').select('*'),
+        supabaseClient.from('categories').select('*'),
+        supabaseClient.from('budgets').select('*'),
+        supabaseClient.from('debts').select('*').eq('is_active', true),
+        supabaseClient.from('goals').select('*')
+      ]);
+
+      let transactions = txRes.data || [];
+      let allCats = catRes.data || [];
+      
+      let reqMonth = '';
+      try { reqMonth = new Intl.DateTimeFormat('fa-IR', { month: 'long' }).format(new Date()); } catch(e){ reqMonth = 'مهر'; }
+      let selectedMonth = isInit ? reqMonth : (document.getElementById('headMonth').value || reqMonth);
+
+      let expenseCats = allCats.filter(c => c.type === 'هزینه').map(c => c.name);
+      let incomeCats = allCats.filter(c => c.type === 'درآمد').map(c => c.name);
+      let accounts = (accRes.data || []).map(a => a.name);
+
+      if(expenseCats.length === 0) expenseCats = ['عمومی'];
+      if(incomeCats.length === 0) incomeCats = ['حقوق'];
+      if(accounts.length === 0) accounts = ['نقدی'];
+
+      let totalBal = 0;
+      let accountsList = accounts.map(accName => {
+         let bal = 0;
+         transactions.forEach(t => {
+             if(t.account === accName) {
+                 if(t.tx_type === 'درآمد') bal += Number(t.amount);
+                 if(t.tx_type === 'هزینه') bal -= Number(t.amount);
+                 if(t.tx_type === 'انتقال') bal -= Number(t.amount);
+             }
+             if(t.dest_account === accName && t.tx_type === 'انتقال') bal += Number(t.amount);
+         });
+         totalBal += bal;
+         return { name: accName, balance: bal };
+      });
+
+      let monthInc = 0, monthExp = 0, txCountMonth = 0;
+      let expByCategory = {};
+      let last6MonthsInc = [0,0,0,0,0,0], last6MonthsExp = [0,0,0,0,0,0];
+      
+      let mIndex = BASE_MONTHS.indexOf(selectedMonth);
+      let last6MonthsLabels = [];
+      if(mIndex !== -1) {
+        for(let j=0; j<6; j++) { if(mIndex - j >= 0) last6MonthsLabels.unshift(BASE_MONTHS[mIndex-j]); }
+      } else { last6MonthsLabels = BASE_MONTHS.slice(0, 6); }
+
+      transactions.forEach(t => {
+        if(t.tx_month === selectedMonth) {
+          if(t.tx_type === 'درآمد') monthInc += Number(t.amount);
+          if(t.tx_type === 'هزینه') {
+            monthExp += Number(t.amount); txCountMonth++;
+            if(!expByCategory[t.category]) expByCategory[t.category] = 0;
+            expByCategory[t.category] += Number(t.amount);
+          }
+        }
+        let tIdx = last6MonthsLabels.indexOf(t.tx_month);
+        if(tIdx !== -1) {
+           if(t.tx_type === 'درآمد') last6MonthsInc[tIdx] += Number(t.amount);
+           if(t.tx_type === 'هزینه') last6MonthsExp[tIdx] += Number(t.amount);
+        }
+      });
+
+      let chartLabels = [], chartData = [];
+      let sortedCats = Object.keys(expByCategory).sort((a,b) => expByCategory[b] - expByCategory[a]);
+      let maxExpCat = sortedCats.length > 0 ? sortedCats[0] : '-';
+      for(let c=0; c < Math.min(6, sortedCats.length); c++) {
+        chartLabels.push(sortedCats[c]); chartData.push(expByCategory[sortedCats[c]]);
+      }
+
+      let budgetArr = (budRes.data || []).map(b => {
+         return { id: b.id, category: b.category, budget: Number(b.amount), spent: expByCategory[b.category] || 0 };
+      });
+
+      DB = {
+        transactions: transactions,
+        categories: expenseCats, incSources: incomeCats, accounts: accounts, months: BASE_MONTHS, methods: BASE_METHODS,
+        dashboard: { totalBalance: totalBal, monthIncome: monthInc, monthExpense: monthExp },
+        budget: budgetArr, accountsList: accountsList,
+        debts: debtRes.data || [], goals: goalRes.data || [],
+        reports: { txCount: txCountMonth, maxExpenseCat: maxExpCat },
+        charts: { expenseLabels: chartLabels, expenseValues: chartData, trendLabels: last6MonthsLabels, trendIncome: last6MonthsInc, trendExpense: last6MonthsExp }
+      };
+
+      renderUI(selectedMonth);
+
+    } catch (e) {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('errorBox').style.display = 'block';
+      document.getElementById('errorMsgText').innerText = "خطا در دریافت اطلاعات دیتابیس: " + e.message;
+    }
+  }
+
+  function renderUI(selectedMonth) {
+    let mList = document.getElementById('headMonth'), fList = document.getElementById('f_month');
+    if(mList.options.length === 0) {
+        DB.months.forEach(m => { mList.add(new Option(m, m)); fList.add(new Option(m, m)); });
+    }
+    mList.value = selectedMonth; fList.value = selectedMonth;
+
+    fillSel('f_cat', DB.categories); fillSel('f_acc', DB.accounts); fillSel('f_dest', DB.accounts); fillSel('f_method', DB.methods);
+
+    setPrivacyVal('d_bal', DB.dashboard.totalBalance, privacyState.totalBal);
+    setPrivacyVal('d_inc', DB.dashboard.monthIncome, privacyState.monthInc);
+    setPrivacyVal('d_exp', DB.dashboard.monthExpense, privacyState.monthExp);
+
+    if(DB.goals.length > 0) {
+      document.getElementById('goalsCard').style.display = 'block';
+      let gHTML = '';
+      DB.goals.forEach(g => {
+        let p = g.target_amount > 0 ? (g.saved_amount / g.target_amount) * 100 : 0;
+        gHTML += `<div class="list-item action-item" style="border: 1px solid #f8f9fa;">
+            <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:bold; margin-bottom:4px;">
+              <span>${g.title}</span><span style="color:var(--primary);">%${Math.round(p)}</span>
+            </div>
+            <div class="prog-bg" style="height:6px;"><div class="prog-bar p" style="width:${Math.min(p,100)}%"></div></div>
+            <div style="font-size:0.75rem; color:var(--gray); display:flex; justify-content:space-between; margin-top:4px;">
+              <span>هدف: ${fN(g.target_amount)}</span><span>جمع‌شده: ${fN(g.saved_amount)}</span>
+            </div>
+            <button class="action-btn" style="background:var(--success-light); color:var(--success);" onclick="fundGoalModal('${g.id}', '${g.title}')"><i class="fas fa-plus"></i> افزایش موجودی</button>
+          </div>`;
+      });
+      document.getElementById('goalsList').innerHTML = gHTML;
+    } else { document.getElementById('goalsCard').style.display = 'none'; }
+
+    let bHTML = '';
+    if(DB.budget.length > 0){
+      DB.budget.forEach(b => {
+        let p = b.budget > 0 ? (b.spent / b.budget) * 100 : 0;
+        let c = p < 70 ? 'g' : (p < 100 ? 'w' : 'd');
+        bHTML += `<div class="list-item action-item" onclick="showTransactions('${b.category}')">
+          <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>${b.category}</span><span>${fN(b.spent)}</span></div>
+          <div class="prog-bg"><div class="prog-bar ${c}" style="width:${Math.min(p,100)}%"></div></div>
+          <div style="font-size:0.75rem; color:var(--gray); display:flex; justify-content:space-between;"><span>بودجه: ${fN(b.budget)}</span><span>باقی‌مانده: ${fN(b.budget-b.spent)}</span></div>
+          <button class="action-btn" onclick="event.stopPropagation(); editBudgetModal('${b.category}', ${b.budget}, '${b.id}')"><i class="fas fa-edit"></i> تنظیم بودجه</button>
+        </div>`;
+      });
+    }
+    document.getElementById('budgetList').innerHTML = bHTML || '<div style="text-align:center; padding:20px; color:var(--gray);">اطلاعاتی یافت نشد</div>';
+
+    // رندر کردن اقساط و بدهی‌ها (با آیکون‌های ادیت و حذف)
+    let dHTML = '';
+    if(DB.debts.length > 0){
+      DB.debts.forEach(d => {
+        let p = d.total_instalments > 0 ? (d.paid_instalments / d.total_instalments) * 100 : 0;
+        let rem = Number(d.total_amount) - (Number(d.paid_instalments) * Number(d.instalment_amount));
+        if (rem < 0) rem = 0;
+        
+        dHTML += `<div class="list-item action-item">
+          <div style="display:flex; justify-content:space-between; align-items:center; font-weight:bold;">
+            <span style="font-size:0.95rem;">${d.title}</span>
+            <div style="display:flex; gap:12px; align-items:center;">
+              <span style="color:var(--danger); font-size:0.95rem;">${fN(rem)} تومان</span>
+              <i class="fas fa-edit edit-icon" style="padding:0; font-size:1rem;" onclick="openDebtModal('${d.id}')"></i>
+              <i class="fas fa-trash del-icon" style="padding:0; font-size:1rem;" onclick="if(confirm('آیا از حذف این وام مطمئن هستید؟')) deleteDebt('${d.id}')"></i>
+            </div>
+          </div>
+          <div class="prog-bg" style="margin: 8px 0;"><div class="prog-bar w" style="width:${Math.min(p,100)}%"></div></div>
+          <div style="font-size:0.75rem; color:var(--gray); display:flex; justify-content:space-between;"><span>مبلغ قسط: ${fN(d.instalment_amount)}</span><span>پرداخت شده: ${d.paid_instalments} از ${d.total_instalments}</span></div>
+          <button class="action-btn btn-danger" onclick="payDebtModal('${d.id}', '${d.title}', ${d.instalment_amount})"><i class="fas fa-check"></i> پرداخت قسط</button>
+        </div>`;
+      });
+    }
+    document.getElementById('debtsList').innerHTML = dHTML || '<div style="text-align:center; padding:10px; color:var(--gray); font-size:0.85rem;">هیچ وام یا بدهی ثبت نشده است</div>';
+
+    document.getElementById('r_count').innerText = DB.reports.txCount;
+    document.getElementById('r_max').innerText = DB.reports.maxExpenseCat;
+    
+    let aHTML = '';
+    DB.accountsList.forEach(a => {
+      aHTML += `<div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #eee;"><span style="font-weight:600;">${a.name}</span><span style="font-weight:bold; color:var(--primary);">${fN(a.balance)}</span></div>`;
+    });
+    document.getElementById('accList').innerHTML = aHTML;
+
+    renderHistoryList(DB.transactions);
+
+    Chart.defaults.font.family = "'Vazirmatn'";
+    if(chExp) chExp.destroy();
+    if(DB.charts.expenseValues.length > 0) {
+      chExp = new Chart(document.getElementById('expChart'), { type: 'doughnut', data: { labels: DB.charts.expenseLabels, datasets: [{ data: DB.charts.expenseValues, backgroundColor: ['#4361ee','#f72585','#7209b7','#4cc9f0','#f8961e','#2ecc71'] }] }, options: { plugins: { legend: { position: 'right', rtl:true } }, cutout: '65%' }});
+    }
+    if(chTrn) chTrn.destroy();
+    if(DB.charts.trendLabels.length > 0) {
+      chTrn = new Chart(document.getElementById('trendChart'), { type: 'bar', data: { labels: DB.charts.trendLabels, datasets: [{ label: 'درآمد', data: DB.charts.trendIncome, backgroundColor: '#2ecc71', borderRadius:4 }, { label: 'هزینه', data: DB.charts.trendExpense, backgroundColor: '#e74c3c', borderRadius:4 }] }, options: { scales: { x: { grid: { display: false } } } }});
+    }
+
+    document.getElementById('loader').style.display = 'none';
+  }
+
+  function renderHistoryList(txArray) {
+    let html = '';
+    if(txArray.length === 0) {
+      document.getElementById('fullHistoryList').innerHTML = '<div style="text-align:center; padding:30px; color:var(--gray);">تراکنشی یافت نشد</div>';
+      return;
+    }
+    txArray.slice().reverse().forEach(t => {
+        let amtClass = t.tx_type === 'درآمد' ? 'pos' : (t.tx_type === 'هزینه' ? 'neg' : 'neu');
+        let sign = t.tx_type === 'درآمد' ? '+' : (t.tx_type === 'هزینه' ? '-' : '');
+        let titleDesc = t.description ? t.description : (t.category && t.tx_type !== 'انتقال' ? t.category : t.tx_type);
+        let subMeta = t.account + (t.tx_type === 'انتقال' ? ' ➔ ' + t.dest_account : '');
+        
+        html += `<div class="setting-item" style="align-items:center;">
+          <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
+            <div style="font-weight:600; font-size:0.9rem; color:var(--dark);">${titleDesc}</div>
+            <div style="font-size:0.75rem; color:var(--gray);">${t.tx_date} | ${subMeta}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="font-weight:700; font-size:1rem; direction:ltr;" class="${amtClass}">${sign}${fN(t.amount)}</div>
+            <i class="fas fa-trash del-icon" onclick="deleteTransaction('${t.id}')"></i>
+          </div>
+        </div>`;
+    });
+    document.getElementById('fullHistoryList').innerHTML = html;
+  }
+
+  function filterHistory() {
+    let q = document.getElementById('searchInput').value.toLowerCase();
+    let filtered = DB.transactions.filter(t => 
+       (t.description && t.description.toLowerCase().includes(q)) || 
+       (t.category && t.category.toLowerCase().includes(q)) || 
+       (t.amount && t.amount.toString().includes(q)) ||
+       (t.tx_month && t.tx_month.includes(q)) ||
+       (t.account && t.account.includes(q))
+    );
+    renderHistoryList(filtered);
+  }
+
+  function showTransactions(filterParam) {
+    let filteredTx = [];
+    let title = '';
+    let currentMonth = document.getElementById('headMonth').value;
+    
+    if (filterParam === 'همه') {
+      filteredTx = DB.transactions.filter(t => t.tx_month === currentMonth);
+      title = 'تراکنش‌های این ماه';
+    } else if (filterParam === 'درآمد' || filterParam === 'هزینه') {
+      filteredTx = DB.transactions.filter(t => t.tx_type === filterParam && t.tx_month === currentMonth);
+      title = 'لیست ' + filterParam;
+    } else {
+      filteredTx = DB.transactions.filter(t => t.category === filterParam && t.tx_month === currentMonth);
+      title = filterParam;
+    }
+
+    document.getElementById('uniModalTitle').innerText = title;
+    
+    let html = '';
+    if(filteredTx.length === 0) {
+      html = '<div style="text-align:center; padding:30px; color:var(--gray);">تراکنشی یافت نشد</div>';
+    } else {
+      html = '<div class="tx-list">';
+      filteredTx.slice().reverse().forEach(t => {
+        let amtClass = t.tx_type === 'درآمد' ? 'pos' : (t.tx_type === 'هزینه' ? 'neg' : 'neu');
+        let sign = t.tx_type === 'درآمد' ? '+' : (t.tx_type === 'هزینه' ? '-' : '');
+        let titleDesc = t.description ? t.description : (t.category && t.tx_type !== 'انتقال' ? t.category : t.tx_type);
+        html += `<div class="tx-item">
+          <div class="tx-info"><div class="tx-desc">${titleDesc}</div><div class="tx-meta"><span>${t.tx_date}</span></div></div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="tx-amount ${amtClass}">${sign}${fN(t.amount)}</div>
+            <i class="fas fa-trash del-icon" onclick="deleteTransaction('${t.id}')"></i>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+    }
+    document.getElementById('uniModalContent').innerHTML = html;
+    openModal();
+  }
+
+  async function executeAction(actionFunc, successMsg) {
+    let btn = document.querySelector('.modal-sheet.show .btn');
+    if(btn) { btn.disabled = true; btn.innerText = 'صبر کنید...'; }
+    try {
+      await actionFunc();
+      showToast(successMsg);
+      closeModal();
+      loadData();
+    } catch(e) {
+      showToast('❌ خطا: ' + (e.message || 'ارتباط با سرور قطع شد'), true);
+      if(btn) { btn.disabled = false; btn.innerText = 'تلاش مجدد'; }
+    }
+  }
+
+  async function submitForm(e) {
+    e.preventDefault(); 
+    let btn = document.getElementById('f_btn'); btn.disabled = true; btn.innerText = 'در حال ذخیره...';
+    
+    let tType = document.getElementById('f_type').value;
+    let finalDesc = document.getElementById('f_desc').value;
+    if(document.getElementById('f_recur').checked) finalDesc += " (تکرار شونده)";
+
+    try {
+      const { error } = await supabaseClient.from('transactions').insert([{
+        user_id: currentUser.id,
+        tx_type: tType,
+        amount: Number(document.getElementById('f_amt').value.replace(/,/g, '')) || 0,
+        tx_date: document.getElementById('f_date').value,
+        tx_month: document.getElementById('f_month').value,
+        category: tType === 'انتقال' ? null : document.getElementById('f_cat').value,
+        account: document.getElementById('f_acc').value,
+        dest_account: tType === 'انتقال' ? document.getElementById('f_dest').value : null,
+        method: document.getElementById('f_method').value,
+        description: finalDesc
+      }]);
+      
+      if(error) throw error;
+      
+      showToast('✅ با موفقیت ثبت شد'); 
+      document.getElementById('txForm').reset(); setType('هزینه');
+      try { document.getElementById('f_date').value = new Intl.DateTimeFormat('fa-IR').format(new Date()); } catch(ex){}
+      nav('dash', document.querySelector('.bottom-nav .nav-item:first-child'));
+      loadData();
+    } catch(err) {
+      showToast('❌ خطا در ثبت اطلاعات: ' + err.message, true);
+    }
+    btn.disabled = false; btn.innerText = 'ثبت تراکنش';
+  }
+
+  function deleteTransaction(id) {
+    executeAction(async () => { 
+      const {error} = await supabaseClient.from('transactions').delete().eq('id', id); 
+      if(error) throw error;
+    }, '✅ تراکنش حذف شد');
+  }
+
+  // --- مدیریت منوهای تنظیمات و بودجه ---
+  function openSettingManager(type, title) {
+    let items = [];
+    if(type === 'category') items = DB.categories || [];
+    if(type === 'income') items = DB.incSources || [];
+    if(type === 'account') items = DB.accounts || [];
+
+    let listHtml = '';
+    
+    if(items && items.length > 0 && items[0] !== 'عمومی' && items[0] !== 'نقدی' && items[0] !== 'حقوق') {
+      listHtml = items.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:8px; padding:10px 12px; background:#f8f9fa; border-radius:8px; border: 1px solid #eee; align-items:center;">
+        <span style="font-weight:600; font-size:0.9rem;">${i}</span>
+        <i class="fas fa-trash del-icon" style="padding:0;" onclick="deleteSetting('${type}', '${i}')"></i>
+      </div>`).join('');
+    } else {
+       if(type === 'category') {
+          listHtml = `<div style="text-align:center; padding:15px; color:var(--gray); font-size:0.9rem;">لیست شما خالی است.<br><button class="btn" style="background:var(--primary); margin-top:10px; width:auto; padding:8px 16px;" onclick="injectDefaultCategories()">+ بارگذاری دسته‌های پیش‌فرض</button></div>`;
+       } else {
+          listHtml = `<div style="text-align:center; padding:10px; color:var(--gray); font-size:0.85rem;">لیست خالی است</div>`;
+       }
+    }
+
+    document.getElementById('uniModalTitle').innerText = title;
+    document.getElementById('uniModalContent').innerHTML = `
+      <div style="max-height:35vh; overflow-y:auto; margin-bottom:15px;">${listHtml}</div>
+      <div class="input-grp"><label>افزودن مورد جدید</label><input type="text" id="m_set_val" placeholder="تایپ کنید..."></div>
+      <button class="btn" style="background:var(--success)" onclick="saveSetting('${type}')">ثبت و اضافه کردن</button>
+    `;
+    openModal();
+  }
+
+  function injectDefaultCategories() {
+     executeAction(async () => {
+        const defaultExpenses = ['مسکن و اجاره', 'خرید خانه', 'خوراک و رستوران', 'خودرو، بنزین و حمل‌ونقل', 'کودک', 'درمان و دارو', 'قبض و خدمات', 'اینترنت و موبایل', 'پوشاک', 'تفریح و سرگرمی', 'تنقلات', 'خرید شخصی', 'هدیه', 'اقساط و بدهی', 'سفر', 'کار و پروژه', 'سایر'];
+        
+        const catInserts = defaultExpenses.map(c => ({ user_id: currentUser.id, type: 'هزینه', name: c }));
+        const {error: e1} = await supabaseClient.from('categories').insert(catInserts);
+        if(e1) throw e1;
+
+        const budgetInserts = defaultExpenses.map(c => ({ user_id: currentUser.id, category: c, amount: 0 }));
+        const {error: e2} = await supabaseClient.from('budgets').insert(budgetInserts);
+        if(e2) throw e2;
+
+     }, '✅ تمام دسته‌بندی‌های پیش‌فرض اضافه شد');
+  }
+
+  function saveSetting(type) {
+    let val = document.getElementById('m_set_val').value;
+    if(!val) return;
+    executeAction(async () => {
+       if(type === 'account') {
+          const {error} = await supabaseClient.from('accounts').insert([{user_id: currentUser.id, name: val}]);
+          if(error) throw error;
+       }
+       if(type === 'category' || type === 'income') {
+          let cType = type === 'income' ? 'درآمد' : 'هزینه';
+          const {error: e1} = await supabaseClient.from('categories').insert([{user_id: currentUser.id, type: cType, name: val}]);
+          if(e1) throw e1;
+          if(cType === 'هزینه') {
+             const {error: e2} = await supabaseClient.from('budgets').insert([{user_id: currentUser.id, category: val, amount: 0}]);
+             if(e2) throw e2;
+          }
+       }
+    }, '✅ مورد اضافه شد');
+  }
+
+  function deleteSetting(type, name) {
+    executeAction(async () => {
+       if(type === 'account') {
+          const {error} = await supabaseClient.from('accounts').delete().eq('name', name).eq('user_id', currentUser.id);
+          if(error) throw error;
+       }
+       if(type === 'category' || type === 'income') {
+          let cType = type === 'income' ? 'درآمد' : 'هزینه';
+          const {error} = await supabaseClient.from('categories').delete().eq('name', name).eq('type', cType).eq('user_id', currentUser.id);
+          if(error) throw error;
+          
+          if(cType === 'هزینه') {
+             await supabaseClient.from('budgets').delete().eq('category', name).eq('user_id', currentUser.id);
+          }
+       }
+    }, '✅ حذف شد');
+  }
+
+  function openGoalsManager() {
+    let listHtml = '';
+    if(DB.goals && DB.goals.length > 0) {
+      listHtml = DB.goals.map(g => `<div style="display:flex; justify-content:space-between; margin-bottom:8px; padding:10px 12px; background:#f8f9fa; border-radius:8px; border: 1px solid #eee; align-items:center;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+           <span style="font-weight:600; font-size:0.9rem;">${g.title}</span>
+           <span style="font-size:0.75rem; color:var(--gray);">هدف: ${fN(g.target_amount)}</span>
+        </div>
+        <i class="fas fa-trash del-icon" style="padding:0;" onclick="deleteGoal('${g.id}')"></i>
+      </div>`).join('');
+    }
+
+    document.getElementById('uniModalTitle').innerText = 'مدیریت اهداف مالی';
+    document.getElementById('uniModalContent').innerHTML = `
+      <div style="max-height:35vh; overflow-y:auto; margin-bottom:15px;">${listHtml}</div>
+      <div class="input-grp"><label>عنوان هدف جدید</label><input type="text" id="m_g_title" placeholder="مثلا: خرید موتور"></div>
+      <div class="input-grp amount"><label>مبلغ هدف</label><input type="tel" id="m_g_target" placeholder="0" onkeyup="formatNum(this)"><span class="curr-lbl">تومان</span></div>
+      <button class="btn" style="background:var(--success)" onclick="saveGoal()">افزودن هدف</button>
+    `;
+    openModal();
+  }
+
+  function saveGoal() {
+    let t = document.getElementById('m_g_title').value;
+    let a = Number(document.getElementById('m_g_target').value.replace(/,/g, '')) || 0;
+    if(!t || !a) return;
+    executeAction(async () => {
+      const {error} = await supabaseClient.from('goals').insert([{user_id: currentUser.id, title: t, target_amount: a}]);
+      if(error) throw error;
+    }, '✅ هدف اضافه شد');
+  }
+
+  function deleteGoal(id) {
+    executeAction(async () => { 
+      const {error} = await supabaseClient.from('goals').delete().eq('id', id); 
+      if(error) throw error;
+    }, '✅ حذف شد');
+  }
+
+  function editBudgetModal(cat, amt, id) {
+    document.getElementById('uniModalTitle').innerText = `تنظیم بودجه: ${cat}`;
+    document.getElementById('uniModalContent').innerHTML = `
+      <div style="padding: 10px 0;">
+        <div class="input-grp amount"><label>مبلغ جدید</label><input type="tel" id="m_input" value="${amt>0?fN(amt):''}" placeholder="0" onkeyup="formatNum(this)"></div>
+        <button class="btn" style="background:var(--success);" onclick="saveBudget('${id}')">ذخیره</button>
+      </div>`;
+    openModal();
+  }
+
+  function saveBudget(id) {
+    let amt = Number(document.getElementById('m_input').value.replace(/,/g, '')) || 0;
+    executeAction(async () => { 
+       const {error} = await supabaseClient.from('budgets').update({amount: amt}).eq('id', id); 
+       if(error) throw error;
+    }, '✅ بودجه ذخیره شد');
+  }
+
+  // --- بخش جدید ثبت و مدیریت وام‌ها (اقساط) ---
+  function openDebtModal(id = null) {
+    let title = '', totalAmt = '', totalInst = '', instAmt = '', paidInst = 0;
+    if(id) {
+       let d = DB.debts.find(x => x.id === id);
+       if(d) {
+         title = d.title; totalAmt = d.total_amount; totalInst = d.total_instalments; 
+         instAmt = d.instalment_amount; paidInst = d.paid_instalments;
+       }
+    }
+    
+    document.getElementById('uniModalTitle').innerText = id ? 'ویرایش مشخصات وام' : 'افزودن وام / بدهی جدید';
+    document.getElementById('uniModalContent').innerHTML = `
+      <div style="padding: 10px 0; display:flex; flex-direction:column; gap:10px;">
+        <div class="input-grp"><label>عنوان وام / بدهی</label><input type="text" id="m_d_title" value="${title}" placeholder="مثلا: وام مسکن"></div>
+        <div class="input-grp amount"><label>مبلغ کل وام</label><input type="tel" id="m_d_total" value="${totalAmt>0?fN(totalAmt):''}" placeholder="0" onkeyup="formatNum(this)"></div>
+        <div class="grid-2" style="margin-bottom:0;">
+          <div class="input-grp"><label>تعداد کل اقساط</label><input type="number" id="m_d_count" value="${totalInst}" placeholder="مثلا: 24"></div>
+          <div class="input-grp"><label>اقساط پرداخت شده</label><input type="number" id="m_d_paid" value="${paidInst}" placeholder="0"></div>
+        </div>
+        <div class="input-grp amount"><label>مبلغ هر قسط</label><input type="tel" id="m_d_inst_amt" value="${instAmt>0?fN(instAmt):''}" placeholder="0" onkeyup="formatNum(this)"></div>
+        <button class="btn" style="background:var(--success);" onclick="saveDebt('${id || ''}')">ذخیره اطلاعات وام</button>
+      </div>
+    `;
+    openModal();
+  }
+
+  function saveDebt(id) {
+     let t = document.getElementById('m_d_title').value;
+     let totalAmt = Number(document.getElementById('m_d_total').value.replace(/,/g, '')) || 0;
+     let count = Number(document.getElementById('m_d_count').value) || 0;
+     let paid = Number(document.getElementById('m_d_paid').value) || 0;
+     let instAmt = Number(document.getElementById('m_d_inst_amt').value.replace(/,/g, '')) || 0;
+     
+     if(!t) return showToast('❌ عنوان وام الزامی است', true);
+
+     executeAction(async () => {
+        if(id) {
+           const {error} = await supabaseClient.from('debts').update({
+              title: t, total_amount: totalAmt, total_instalments: count, paid_instalments: paid, instalment_amount: instAmt
+           }).eq('id', id);
+           if(error) throw error;
+        } else {
+           const {error} = await supabaseClient.from('debts').insert([{
+              user_id: currentUser.id, title: t, total_amount: totalAmt, total_instalments: count, paid_instalments: paid, instalment_amount: instAmt, is_active: true
+           }]);
+           if(error) throw error;
+        }
+     }, id ? '✅ مشخصات وام ویرایش شد' : '✅ وام جدید اضافه شد');
+  }
+
+  function deleteDebt(id) {
+     executeAction(async () => {
+        const {error} = await supabaseClient.from('debts').delete().eq('id', id);
+        if(error) throw error;
+     }, '✅ وام با موفقیت حذف شد');
+  }
+
+  function payDebtModal(id, title, amt) {
+    document.getElementById('uniModalTitle').innerText = `پرداخت قسط: ${title}`;
+    let accOpts = DB.accounts.map(a => `<option value="${a}">${a}</option>`).join('');
+    let methOpts = DB.methods.map(m => `<option value="${m}">${m}</option>`).join('');
+    let today = document.getElementById('f_date').value;
+    
+    document.getElementById('uniModalContent').innerHTML = `
+      <div style="padding: 10px 0;">
+        <div class="input-grp amount"><label>مبلغ پرداخت</label><input type="tel" id="m_amt" value="${fN(amt)}" onkeyup="formatNum(this)"></div>
+        <div class="input-grp"><label>از حساب</label><select id="m_acc">${accOpts}</select></div>
+        <div class="input-grp"><label>روش پرداخت</label><select id="m_meth">${methOpts}</select></div>
+        <button class="btn" style="background:var(--danger);" onclick="processDebtPay('${id}', '${title}', '${today}')">ثبت پرداخت</button>
+      </div>`;
+    openModal();
+  }
+
+  function processDebtPay(id, title, dateVal) {
+    executeAction(async () => {
+       let debt = DB.debts.find(d => d.id === id);
+       const {error: e1} = await supabaseClient.from('debts').update({paid_instalments: debt.paid_instalments + 1}).eq('id', id);
+       if(e1) throw e1;
+       
+       let amt = Number(document.getElementById('m_amt').value.replace(/,/g, '')) || 0;
+       const {error: e2} = await supabaseClient.from('transactions').insert([{
+         user_id: currentUser.id, tx_type: 'هزینه', category: 'اقساط و بدهی', amount: amt,
+         account: document.getElementById('m_acc').value, method: document.getElementById('m_meth').value,
+         description: 'پرداخت قسط: ' + title, tx_date: dateVal, tx_month: document.getElementById('headMonth').value
+       }]);
+       if(e2) throw e2;
+    }, '✅ قسط پرداخت شد');
+  }
+
+  function fundGoalModal(id, title) {
+    document.getElementById('uniModalTitle').innerText = `واریز به هدف: ${title}`;
+    let accOpts = DB.accounts.map(a => `<option value="${a}">${a}</option>`).join('');
+    let methOpts = DB.methods.map(m => `<option value="${m}">${m}</option>`).join('');
+    let today = document.getElementById('f_date').value;
+    
+    document.getElementById('uniModalContent').innerHTML = `
+      <div style="padding: 10px 0;">
+        <div class="input-grp amount"><label>مبلغ واریزی</label><input type="tel" id="m_amt" placeholder="0" onkeyup="formatNum(this)"></div>
+        <div class="input-grp"><label>از حساب</label><select id="m_acc">${accOpts}</select></div>
+        <div class="input-grp"><label>روش پرداخت</label><select id="m_meth">${methOpts}</select></div>
+        <button class="btn" style="background:var(--success);" onclick="processGoalFund('${id}', '${title}', '${today}')">ثبت واریزی</button>
+      </div>`;
+    openModal();
+  }
+
+  function processGoalFund(id, title, dateVal) {
+    executeAction(async () => {
+       let goal = DB.goals.find(g => g.id === id);
+       let amt = Number(document.getElementById('m_amt').value.replace(/,/g, '')) || 0;
+       const {error: e1} = await supabaseClient.from('goals').update({saved_amount: Number(goal.saved_amount) + amt}).eq('id', id);
+       if(e1) throw e1;
+       
+       const {error: e2} = await supabaseClient.from('transactions').insert([{
+         user_id: currentUser.id, tx_type: 'انتقال', amount: amt,
+         account: document.getElementById('m_acc').value, dest_account: 'پس‌انداز هدف', method: document.getElementById('m_meth').value,
+         description: 'واریز به هدف: ' + title, tx_date: dateVal, tx_month: document.getElementById('headMonth').value
+       }]);
+       if(e2) throw e2;
+    }, '✅ واریز انجام شد');
+  }
+
+  // --- توابع کمکی ---
+  function openModal() { document.getElementById('uniOverlay').classList.add('show'); document.getElementById('uniSheet').classList.add('show'); }
+  function closeModal() { document.getElementById('uniOverlay').classList.remove('show'); document.getElementById('uniSheet').classList.remove('show'); }
+
+  function setPrivacyVal(id, val, isHidden) {
+    let el = document.getElementById(id); el.setAttribute('data-val', fN(val));
+    if(isHidden) el.innerText = '****'; else el.innerText = el.getAttribute('data-val');
+  }
+
+  function togglePrivacy(key, btnEl) {
+    privacyState[key] = !privacyState[key];
+    let isH = privacyState[key];
+    if(key === 'totalBal') btnEl.innerHTML = isH ? '<i class="fas fa-eye-slash"></i> نمایش' : '<i class="fas fa-eye"></i> مخفی';
+    else btnEl.innerHTML = isH ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+    
+    let idMap = { 'totalBal': 'd_bal', 'monthInc': 'd_inc', 'monthExp': 'd_exp' };
+    let valEl = document.getElementById(idMap[key]);
+    if (isH) { valEl.innerText = '****'; valEl.classList.add('hidden-val'); if(key === 'totalBal') document.getElementById('c_bal').classList.add('hidden-val'); } 
+    else { valEl.innerText = valEl.getAttribute('data-val'); valEl.classList.remove('hidden-val'); if(key === 'totalBal') document.getElementById('c_bal').classList.remove('hidden-val'); }
+  }
+
+  function nav(pageId, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + pageId).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('fabBtn').classList.remove('active');
+    if(pageId === 'add') document.getElementById('fabBtn').classList.add('active');
+    else if (el) el.classList.add('active');
+  }
+
+  function setType(t) {
+    document.getElementById('f_type').value = t;
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.type-btn[data-type="${t}"]`).classList.add('active');
+    let dest = document.getElementById('grp_dest'), cat = document.getElementById('grp_cat'), recur = document.getElementById('grp_recur');
+    if (t === 'انتقال') { dest.style.display = 'block'; cat.style.display = 'none'; recur.style.display = 'none'; document.getElementById('lbl_acc').innerText = 'از حساب مبدأ'; } 
+    else { dest.style.display = 'none'; cat.style.display = 'block'; recur.style.display = 'flex'; document.getElementById('lbl_acc').innerText = t === 'درآمد' ? 'واریز به حساب' : 'حساب پرداختی'; fillSel('f_cat', t === 'درآمد' ? DB.incSources : DB.categories); }
+  }
+
+  function fillSel(id, list) { let el = document.getElementById(id); el.innerHTML = ''; list.forEach(i => el.add(new Option(i, i))); }
+  function formatNum(input) { let val = input.value.replace(/,/g, ''); if (!isNaN(val) && val !== '') input.value = parseInt(val).toLocaleString('en-US'); }
+  function fN(num) { return parseInt(num).toLocaleString('en-US'); }
+  function showToast(m, isErr=false) { 
+    let t = document.getElementById('toast'); t.innerText = m; t.style.background = isErr ? 'var(--danger)' : 'var(--success)';
+    t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); 
+  }
+</script>
+</body>
+</html>
